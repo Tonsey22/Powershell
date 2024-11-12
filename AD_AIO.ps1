@@ -769,7 +769,7 @@ function SMB-RIGHTS {
         $folderTextBox = New-Object System.Windows.Forms.TextBox
         $folderTextBox.Location = New-Object System.Drawing.Point(10, 215)
         $folderTextBox.Size = New-Object System.Drawing.Size(300, 30)
-        $folderTextBox.ReadOnly = $true
+        $folderTextBox.ReadOnly = $false
         $form.Controls.Add($folderTextBox)
 
         # Button für Ordnerauswahl
