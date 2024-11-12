@@ -3,14 +3,13 @@
 # Version 1.0:
 # Created 2024 by Tim Eertmoed, Germany to work on Windows Server 2019/2022 as an user creating script.
 
-# Sicherstellen, dass das Skript als Administrator ausgeführt wird
 $myWindowsIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 $myPrincipal = New-Object System.Security.Principal.WindowsPrincipal($myWindowsIdentity)
 
-# Check if the current user is an administrator
 if (-not $myPrincipal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # Start a new PowerShell process with administrator rights, using the current user context
-    Start-Process powershell -ArgumentList "-NoExit -Command & {$myinvocation.MyCommand.Definition}" -Verb runAs
+    $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+    Start-Process powershell -ArgumentList $arguments -Verb runAs
+    Exit
 }
 
 # Windows.Forms Assembly laden
