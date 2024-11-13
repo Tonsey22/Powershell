@@ -3,6 +3,7 @@
 # Version 1.0:
 # Created 2024 by Tim Eertmoed, Germany to work on Windows Server 2019/2022 as an user creating script.
 
+# Sicherstellen, dass das Skript als Administrator ausgeführt wird
 $myWindowsIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 $myPrincipal = New-Object System.Security.Principal.WindowsPrincipal($myWindowsIdentity)
 
@@ -19,14 +20,6 @@ Import-Module ActiveDirectory
 # Funktion, die beim Klick auf "Create User" ausgeführt wird
 function Create-User {
     Write-Host "Erstelle Benutzer..."
-        $myWindowsIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-        $myPrincipal = New-Object System.Security.Principal.WindowsPrincipal($myWindowsIdentity)
-
-        if (-not $myPrincipal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
-            Start-Process powershell -ArgumentList $arguments -Verb runAs
-            Exit
-        }
         Add-Type -AssemblyName System.Windows.Forms
         Import-Module ActiveDirectory
 
@@ -768,7 +761,7 @@ function SMB-RIGHTS {
         $folderTextBox = New-Object System.Windows.Forms.TextBox
         $folderTextBox.Location = New-Object System.Drawing.Point(10, 215)
         $folderTextBox.Size = New-Object System.Drawing.Size(300, 30)
-        $folderTextBox.ReadOnly = $false
+        $folderTextBox.ReadOnly = $true
         $form.Controls.Add($folderTextBox)
 
         # Button für Ordnerauswahl
@@ -1062,11 +1055,261 @@ function SMB-RIGHTS {
         $form.ShowDialog()
 }
 
+# Funktion, die beim Klick auf "SMB-Share" ausgeführt wird
+function SMB-SHARE {
+    Write-Host "Führe SMB Share aus..."
+        Add-Type -AssemblyName System.Windows.Forms
+        Import-Module ActiveDirectory
+
+        # Hauptform erstellen
+        $form = New-Object System.Windows.Forms.Form
+        $form.Text = "Verzeichnis- und OU-Auswahl"
+        $form.Size = New-Object System.Drawing.Size(648, 350)
+
+        # Label für den Benutzer
+        $userLabel = New-Object System.Windows.Forms.Label
+        $userLabel.Text = "Benutzer (DOMAIN\User):"
+        $userLabel.Location = New-Object System.Drawing.Point(10, 10)  # Position des Beenden-Buttons
+        $userLabel.Size = New-Object System.Drawing.Size(300, 20)  # Größe des Buttons festgelegt
+        $form.Controls.Add($userLabel)
+
+        # TextBox für den Benutzer
+        $userTextBox = New-Object System.Windows.Forms.TextBox
+        $userTextBox.Location = New-Object System.Drawing.Point(10, 30)
+        $userTextBox.Size = New-Object System.Drawing.Size(295, 30)
+        $userTextBox.ReadOnly = $false
+        $form.Controls.Add($userTextBox)
+
+        # Label für das Password
+        $passwordLabel = New-Object System.Windows.Forms.Label
+        $passwordLabel.Text = "Password:"
+        $passwordLabel.Location = New-Object System.Drawing.Point(320, 10)  # Position des Beenden-Buttons
+        $passwordLabel.Size = New-Object System.Drawing.Size(300, 20)  # Größe des Buttons festgelegt
+        $form.Controls.Add($passwordLabel)
+
+        # TextBox für das Password
+        $passwordTextBox = New-Object System.Windows.Forms.TextBox
+        $passwordTextBox.Location = New-Object System.Drawing.Point(320, 30)
+        $passwordTextBox.Size = New-Object System.Drawing.Size(295, 30)
+        $passwordTextBox.ReadOnly = $false
+        $passwordTextBox.UseSystemPasswordChar = $true  # Passwortfeld
+        $form.Controls.Add($passwordTextBox)
+
+        # Label für den FileServer
+        $fsLabel = New-Object System.Windows.Forms.Label
+        $fsLabel.Text = "Fileserver:"
+        $fsLabel.Location = New-Object System.Drawing.Point(10, 60)
+        $fsLabel.Size = New-Object System.Drawing.Size(190, 20)
+        $form.Controls.Add($fsLabel)
+
+        # TextBox für den FileServer
+        $fileServerTextBox = New-Object System.Windows.Forms.TextBox
+        $fileServerTextBox.Location = New-Object System.Drawing.Point(10, 80)
+        $fileServerTextBox.Size = New-Object System.Drawing.Size(190, 30)
+        $fileServerTextBox.ReadOnly = $false
+        $form.Controls.Add($fileServerTextBox)
+
+        # Label für den SharePath
+        $spLabel = New-Object System.Windows.Forms.Label
+        $spLabel.Text = "Pfad (C:\DFS\ ):"
+        $spLabel.Location = New-Object System.Drawing.Point(217, 60)
+        $spLabel.Size = New-Object System.Drawing.Size(190, 20)
+        $form.Controls.Add($spLabel)
+
+        # TextBox für den SharePath
+        $sharePathTextBox = New-Object System.Windows.Forms.TextBox
+        $sharePathTextBox.Location = New-Object System.Drawing.Point(217, 80)
+        $sharePathTextBox.Size = New-Object System.Drawing.Size(190, 30)
+        $sharePathTextBox.ReadOnly = $false
+        $form.Controls.Add($sharePathTextBox)
+
+        # Label für den ShareName
+        $snLabel = New-Object System.Windows.Forms.Label
+        $snLabel.Text = "ShareName:"
+        $snLabel.Location = New-Object System.Drawing.Point(426, 60)
+        $snLabel.Size = New-Object System.Drawing.Size(190, 20)
+        $form.Controls.Add($snLabel)
+
+        # TextBox für den ShareName
+        $shareNameTextBox = New-Object System.Windows.Forms.TextBox
+        $shareNameTextBox.Location = New-Object System.Drawing.Point(426, 80)
+        $shareNameTextBox.Size = New-Object System.Drawing.Size(190, 30)
+        $shareNameTextBox.ReadOnly = $false
+        $form.Controls.Add($shareNameTextBox)
+
+        # Button für Share-Erstellung
+        $createShareButton = New-Object System.Windows.Forms.Button
+        $createShareButton.Text = "Shares erstellen"
+        $createShareButton.Location = New-Object System.Drawing.Point(10, 270)
+        $createShareButton.Size = New-Object System.Drawing.Size(300, 30)
+        $form.Controls.Add($createShareButton)
+
+        # Beenden-Button erstellen
+        $exitButton = New-Object System.Windows.Forms.Button
+        $exitButton.Text = "Beenden"
+        $exitButton.Location = New-Object System.Drawing.Point(320, 270)  # Position des Beenden-Buttons
+        $exitButton.Size = New-Object System.Drawing.Size(300, 30)  # Größe des Buttons festgelegt
+        $form.Controls.Add($exitButton)
+        $exitButton.Add_Click({
+            $form.Close()
+        })
+
+        $createShareButton.Add_Click({
+            # Überprüfen, ob alle erforderlichen Felder ausgefüllt sind
+            $missingFields = @()
+
+            if (-not $userTextBox.Text) { $missingFields += "Benutzer" }
+            if (-not $passwordTextBox.Text) { $missingFields += "Passwort" }
+            if (-not $fileServerTextBox.Text) { $missingFields += "Fileserver" }
+            if (-not $sharePathTextBox.Text) { $missingFields += "SharePath" }
+            if (-not $shareNameTextBox.Text) { $missingFields += "ShareName" }
+
+            if ($missingFields.Count -gt 0) {
+                [System.Windows.Forms.MessageBox]::Show("Bitte füllen Sie die folgenden Felder aus: " + [string]::Join(", ", $missingFields), "Fehlende Eingaben", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+                return
+            }
+            $fileserver = $fileServerTextBox.Text
+            $userName = $userTextBox.Text  # Textfeld für den Benutzernamen
+            $password = $passwordTextBox.Text  # Textfeld für das Passwort
+
+            # Erstelle ein PSCredential-Objekt
+            $securePassword = ConvertTo-SecureString -String $password -AsPlainText -Force
+            $credential = New-Object System.Management.Automation.PSCredential($userName, $securePassword)
+
+            $shares = @(
+                @{Name = $shareNameTextBox.Text; Path = $sharePathTextBox.Text}
+            )
+
+            # Hole den Domänennamen des aktuellen DC
+            $domainName = (Get-ADDomain).DNSRoot
+
+            # Remote PowerShell-Sitzung zum Fileserver herstellen mit den übergebenen Anmeldeinformationen
+            $session = New-PSSession -ComputerName $fileserver -Credential $credential
+
+            # Durchlaufe jedes Share und erstelle es auf dem Fileserver
+            foreach ($share in $shares) {
+                $shareName = $share.Name
+                $sharePath = $share.Path
+
+                # Remote-Skriptblock zum Erstellen des Shares und der Ordner
+                $scriptBlock = {
+                    param ($sharePath, $shareName)
+
+                    try {
+                        # Überprüfen, ob der Ordner existiert
+                        if (-not (Test-Path -Path $sharePath)) {
+                            New-Item -Path $sharePath -ItemType Directory -ErrorAction Stop
+                            Write-Output "Erstelle Ordner: $sharePath"  # Ausgabe an den lokalen Host
+                        }
+
+                        # Überprüfen, ob das Share bereits existiert
+                        $existingShare = Get-SmbShare -Name $shareName -ErrorAction SilentlyContinue
+                        if ($existingShare) {
+                            Write-Output "Das Share $shareName existiert bereits."  # Ausgabe an den lokalen Host
+                        } else {
+                            # Share erstellen (ohne ABE)
+                            New-SmbShare -Name $shareName -Path $sharePath -ErrorAction Stop
+                            Write-Output "$shareName wurde erfolgreich erstellt."  # Ausgabe an den lokalen Host
+                        }
+                    } catch {
+                        Write-Output "Fehler beim Erstellen des Shares: $shareName"  # Ausgabe an den lokalen Host
+                        Write-Output $_.Exception.Message  # Fehlerausgabe an den lokalen Host
+                    }
+                }
+
+                # Schritt 1 ausführen: Share und Ordner erstellen
+                $results = Invoke-Command -Session $session -ScriptBlock $scriptBlock -ArgumentList $sharePath, $shareName
+
+                # Ausgabe der Ergebnisse an die Debug-TextBox
+                foreach ($result in $results) {
+                    if ($result -like "Fehler*") {
+                        # Fehlernachricht in ROT
+                        Add-DebugMessage -message $result -isPositive $false
+                    } elseif ($result -like "Das Share*existiert bereits*") {
+                        # Existierendes Share in ORANGE
+                        Add-DebugMessage -message $result -isPositive $false -isSeparator $true
+                    } else {
+                        # Erfolgnachricht in GRÜN
+                        Add-DebugMessage -message $result -isPositive $true
+                    }
+                }
+
+                # Remote-Skriptblock für ABE nachträglich setzen
+                $setABEBlock = {
+                    param ($shareName)
+
+                    try {
+                        # ABE aktivieren
+                        Set-SmbShare -Name $shareName -AccessBasedEnumeration $true -ErrorAction Stop
+                        Write-Output "Zugriffbasierte Aufzählung für Share: $shareName wurde erfolgreich aktiviert."  # Ausgabe an den lokalen Host
+                    } catch {
+                        Write-Output "Fehler beim Aktivieren der Zugriffsbasierten Aufzählung für Share: $shareName"  # Ausgabe an den lokalen Host
+                        Write-Output $_.Exception.Message  # Fehlerausgabe an den lokalen Host
+                    }
+                }
+
+                # Schritt 2 ausführen: ABE nachträglich aktivieren
+                $results = Invoke-Command -Session $session -ScriptBlock $setABEBlock -ArgumentList $shareName
+
+                # Ausgabe der Ergebnisse an die Debug-TextBox
+                foreach ($result in $results) {
+                    if ($result -like "Fehler*") {
+                        # Fehlernachricht in ROT
+                        Add-DebugMessage -message $result -isPositive $false
+                    } else {
+                        # Erfolgnachricht in GRÜN
+                        Add-DebugMessage -message $result -isPositive $true
+                    }
+                }
+            }
+
+            # Sitzung schließen
+            Remove-PSSession -Session $session
+
+            # Erfolgreiche Abschlussnachricht in GRÜN
+            Add-DebugMessage -message "Alle Shares wurden erfolgreich erstellt und ABE wurde gesetzt." -isPositive $true
+        })
+
+        # RichTextBox für Debug-Informationen hinzufügen
+        $debugTextBox = New-Object System.Windows.Forms.RichTextBox
+        $debugTextBox.Multiline = $true
+        $debugTextBox.Location = New-Object System.Drawing.Point(10, 110)
+        $debugTextBox.Size = New-Object System.Drawing.Size(610, 150)
+        $debugTextBox.ScrollBars = 'Vertical'
+        $debugTextBox.ReadOnly = $true
+        $form.Controls.Add($debugTextBox)
+
+        # Funktion zum Hinzufügen von Text in die Debug-TextBox mit Farben
+        function Add-DebugMessage {
+            param (
+                [string]$message,
+                [bool]$isPositive,
+                [bool]$isSeparator = $false  # Standardwert für isSeparator auf false setzen
+            )
+
+            if ($isSeparator) {
+                # Setze die Textfarbe auf Schwarz für den Separator
+                $debugTextBox.SelectionColor = 'Black'
+            } elseif ($isPositive) {
+                # Setze die Textfarbe auf Grün für positive Nachrichten
+                $debugTextBox.SelectionColor = 'Green'
+            } else {
+                # Setze die Textfarbe auf Rot für negative Nachrichten
+                $debugTextBox.SelectionColor = 'Red'
+            }
+
+            # Füge die Nachricht zum Textfeld hinzu
+            $debugTextBox.AppendText($message + [Environment]::NewLine)
+        }
+
+        # Formular anzeigen
+        $form.ShowDialog()
+}
 
 # Erstellen des Formulars
 $form = New-Object Windows.Forms.Form
 $form.Text = 'Administrator Tools'
-$form.Size = New-Object Drawing.Size(300, 250)
+$form.Size = New-Object Drawing.Size(300, 300)
 
 # Erstellen des Buttons für "Create User"
 $btnCreateUser = New-Object Windows.Forms.Button
@@ -1074,6 +1317,7 @@ $btnCreateUser.Text = 'Create User'
 $btnCreateUser.Size = New-Object Drawing.Size(250, 40)
 $btnCreateUser.Location = New-Object Drawing.Point(20, 10)
 $btnCreateUser.Add_Click({ Create-User })
+$form.Controls.Add($btnCreateUser)
 
 # Erstellen des Buttons für "Create Groups"
 $btnCreateGroups = New-Object Windows.Forms.Button
@@ -1081,6 +1325,7 @@ $btnCreateGroups.Text = 'Create Groups'
 $btnCreateGroups.Size = New-Object Drawing.Size(250, 40)
 $btnCreateGroups.Location = New-Object Drawing.Point(20, 60)
 $btnCreateGroups.Add_Click({ Create-Groups })
+$form.Controls.Add($btnCreateGroups)
 
 # Erstellen des Buttons für "AGDLP"
 $btnADGDL = New-Object Windows.Forms.Button
@@ -1088,18 +1333,22 @@ $btnADGDL.Text = 'AGDLP'
 $btnADGDL.Size = New-Object Drawing.Size(250, 40)
 $btnADGDL.Location = New-Object Drawing.Point(20, 110)
 $btnADGDL.Add_Click({ ADGDL })
+$form.Controls.Add($btnADGDL)
+
+# Erstellen des Buttons für "SMB-SHARE"
+$btnSMBSHARE = New-Object Windows.Forms.Button
+$btnSMBSHARE.Text = 'SMB-SHARE'
+$btnSMBSHARE.Size = New-Object Drawing.Size(250, 40)
+$btnSMBSHARE.Location = New-Object Drawing.Point(20, 160)
+$btnSMBSHARE.Add_Click({ SMB-SHARE })
+$form.Controls.Add($btnSMBSHARE)
 
 # Erstellen des Buttons für "SMB-RIGHTS"
 $btnSMBRIGHTS = New-Object Windows.Forms.Button
 $btnSMBRIGHTS.Text = 'SMB-RIGHTS'
 $btnSMBRIGHTS.Size = New-Object Drawing.Size(250, 40)
-$btnSMBRIGHTS.Location = New-Object Drawing.Point(20, 160)
+$btnSMBRIGHTS.Location = New-Object Drawing.Point(20, 210)
 $btnSMBRIGHTS.Add_Click({ SMB-RIGHTS })
-
-# Hinzufügen der Buttons zum Formular
-$form.Controls.Add($btnCreateUser)
-$form.Controls.Add($btnCreateGroups)
-$form.Controls.Add($btnADGDL)
 $form.Controls.Add($btnSMBRIGHTS)
 
 # Anzeigen des Formulars
